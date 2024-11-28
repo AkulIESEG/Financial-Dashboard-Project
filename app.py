@@ -61,8 +61,10 @@ with tab1:
     # Handle case where no data or Close column is empty
     if stock_data.empty:
         st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
-    elif 'Close' not in stock_data.columns or stock_data['Close'].isna().all():
-        st.error("No valid 'Close' data available for the selected stock ticker. Please try another ticker.")
+    elif 'Close' not in stock_data.columns:
+        st.error("The 'Close' column is not present in the data. Please try another ticker.")
+    elif stock_data['Close'].isna().all():
+        st.error("All 'Close' values are NaN for the selected date range. Please try another ticker.")
     else:
         # Line chart of stock closing prices
         st.subheader("Stock Closing Prices Over Time")
