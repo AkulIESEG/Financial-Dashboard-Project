@@ -1,5 +1,3 @@
-
-
 # Import Libraries
 import streamlit as st
 import pandas as pd
@@ -50,7 +48,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Monte Carlo Simulation"
 ])
 
-
 # -------------------------------------------------------
 # Tab 1: Overview
 # -------------------------------------------------------
@@ -64,18 +61,16 @@ with tab1:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    # Debug: Display the structure of stock_data
+    # Debugging: Display the DataFrame structure
     st.write("Debug: Displaying stock_data DataFrame")
-    st.write("Columns in stock_data:", stock_data.columns.tolist())
-    st.write("Head of stock_data:")
-    st.write(stock_data.head())
+    st.write("Columns in stock_data:", stock_data.columns.to_list())
+    st.write("Head of stock_data:", stock_data.head())
 
+    # Handle case where no data or Close column is empty
     if stock_data.empty:
         st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
-    elif 'Close' not in stock_data.columns:
-        st.error("The 'Close' column is missing in the stock data. Check the stock ticker or data source.")
-    elif stock_data['Close'].isnull().all():
-        st.error("All values in the 'Close' column are null. Try another stock ticker or date range.")
+    elif 'Close' not in stock_data.columns or stock_data['Close'].isnull().all():
+        st.error("No valid 'Close' data available for the selected stock ticker. Please try another ticker.")
     else:
         # Line chart of stock closing prices
         st.subheader("Stock Closing Prices Over Time")
@@ -91,7 +86,6 @@ with tab1:
         # Display summary statistics
         st.subheader("Summary Statistics")
         st.write(stock_data.describe())
-
    
 # -------------------------------------------------------
 # Tab 2: Metrics
