@@ -3,7 +3,6 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import numpy as np
-import plotly.graph_objects as go
 import plotly.express as px
 
 # -------------------------------------------------------
@@ -31,13 +30,6 @@ stock_ticker = st.sidebar.text_input("Enter a Stock Ticker (e.g., AAPL, TSLA):",
 start_date = st.sidebar.date_input("Start Date:", value=pd.to_datetime("2023-01-01"))
 end_date = st.sidebar.date_input("End Date:", value=pd.to_datetime("2024-01-01"))
 
-# Monte Carlo simulation parameters
-n_simulations = st.sidebar.slider("Number of Simulations:", min_value=100, max_value=1000, step=100, value=500)
-n_days = st.sidebar.slider("Days to Simulate:", min_value=30, max_value=365, step=30, value=252)
-
-# Rolling window slider for Tab 2
-rolling_window = st.sidebar.slider("Rolling Window (days):", min_value=5, max_value=60, value=20)
-
 # -------------------------------------------------------
 # Tabs Setup
 # -------------------------------------------------------
@@ -63,13 +55,13 @@ with tab1:
 
     # Debugging: Display the DataFrame structure
     st.write("Debug: Displaying stock_data DataFrame")
-    st.write("Columns in stock_data:", stock_data.columns.to_list())
+    st.write("Columns in stock_data:", stock_data.columns.tolist())
     st.write("Head of stock_data:", stock_data.head())
 
     # Handle case where no data or Close column is empty
     if stock_data.empty:
         st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
-    elif 'Close' not in stock_data.columns or stock_data['Close'].isnull().all():
+    elif 'Close' not in stock_data.columns or stock_data['Close'].isna().all():
         st.error("No valid 'Close' data available for the selected stock ticker. Please try another ticker.")
     else:
         # Line chart of stock closing prices
@@ -86,6 +78,7 @@ with tab1:
         # Display summary statistics
         st.subheader("Summary Statistics")
         st.write(stock_data.describe())
+
    
 # -------------------------------------------------------
 # Tab 2: Metrics
