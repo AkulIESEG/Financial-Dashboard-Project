@@ -51,8 +51,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 # Tab 1: Overview
-
-
 with tab1:
     st.header("Overview")
     st.write("""
@@ -63,12 +61,17 @@ with tab1:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    # Debugging: Show data structure for troubleshooting
+    # Debugging: Display the DataFrame structure
     st.write("Debug: Displaying stock_data DataFrame")
+    st.write(stock_data)
+
+    # Error handling for missing or invalid data
     if stock_data.empty:
         st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
-    elif 'Close' not in stock_data.columns or stock_data['Close'].isna().all():
-        st.error("The 'Close' column is empty or contains no valid data. Please adjust your stock ticker or date range.")
+    elif 'Close' not in stock_data.columns:
+        st.error("The selected stock data does not contain a 'Close' column. Please try another stock ticker.")
+    elif stock_data['Close'].isna().all():
+        st.error("The 'Close' column contains only missing values. Please adjust your stock ticker or date range.")
     else:
         # Debugging: Show columns and head of DataFrame
         st.write("Columns in stock_data:", stock_data.columns.tolist())
