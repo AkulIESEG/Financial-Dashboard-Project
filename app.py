@@ -50,9 +50,9 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Monte Carlo Simulation"
 ])
 
-# -------------------------------------------------------
 # Tab 1: Overview
-# -------------------------------------------------------
+
+
 with tab1:
     st.header("Overview")
     st.write("""
@@ -63,19 +63,17 @@ with tab1:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    # Debugging outputs for visibility
+    # Debugging: Show data structure for troubleshooting
     st.write("Debug: Displaying stock_data DataFrame")
-    st.write("Columns in stock_data:", stock_data.columns.tolist())
-    st.write("Head of stock_data:", stock_data.head())
-
-    # Enhanced Error Handling
     if stock_data.empty:
-        st.error("No data available for the selected stock ticker or date range.")
-    elif 'Close' not in stock_data.columns:
-        st.error("The selected stock data does not contain 'Close' prices.")
-    elif stock_data['Close'].isna().sum() == len(stock_data):
-        st.error("The 'Close' column contains no valid data. Please choose a different stock or date range.")
+        st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
+    elif 'Close' not in stock_data.columns or stock_data['Close'].isna().all():
+        st.error("The 'Close' column is empty or contains no valid data. Please adjust your stock ticker or date range.")
     else:
+        # Debugging: Show columns and head of DataFrame
+        st.write("Columns in stock_data:", stock_data.columns.tolist())
+        st.write("Head of stock_data:", stock_data.head())
+
         # Line chart of stock closing prices
         st.subheader("Stock Closing Prices Over Time")
         fig = px.line(
@@ -90,6 +88,7 @@ with tab1:
         # Display summary statistics
         st.subheader("Summary Statistics")
         st.write(stock_data.describe())
+
 
 # -------------------------------------------------------
 # Tab 2: Metrics
@@ -262,4 +261,4 @@ with tab4:
         # Download results
         if st.button("Download Simulation Results"):
             simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
-            st.success("Results saved as MonteCarloSimulationResults.csv")
+            st.success("Results saved as MonteCarloSimulationResults.csv") 
