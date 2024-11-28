@@ -1,4 +1,5 @@
 
+
 # Import Libraries
 import streamlit as st
 import pandas as pd
@@ -62,23 +63,26 @@ with tab1:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    # Debugging: Display stock_data for inspection
+    # Debugging: Display the structure and content of stock_data
     st.write("Debug: Displaying stock_data DataFrame")
-    st.write(stock_data)
-
-    # Validate if data exists and has the required 'Close' column
+    st.write("Columns in stock_data:", stock_data.columns if not stock_data.empty else "No columns")
+    st.write("Head of stock_data:", stock_data.head() if not stock_data.empty else "No data available")
+    
+    # Validation and Visualization
     if stock_data.empty:
         st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
     elif 'Close' not in stock_data.columns:
         st.error("The 'Close' column is missing from the stock data. Please check the stock ticker and date range.")
+    elif stock_data['Close'].isnull().all():
+        st.error("The 'Close' column exists but contains no valid data.")
     else:
         # Line chart of stock closing prices
         st.subheader("Stock Closing Prices Over Time")
         fig = px.line(
-            stock_data, 
-            x=stock_data.index, 
-            y='Close', 
-            title="Closing Prices", 
+            stock_data,
+            x=stock_data.index,
+            y='Close',
+            title="Closing Prices",
             template="plotly_white"
         )
         st.plotly_chart(fig)
@@ -86,7 +90,7 @@ with tab1:
         # Display summary statistics
         st.subheader("Summary Statistics")
         st.write(stock_data.describe())
-
+   
 
 # -------------------------------------------------------
 # Tab 2: Metrics
