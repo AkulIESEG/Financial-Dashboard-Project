@@ -1,8 +1,10 @@
+
 # Import Libraries
 import streamlit as st
 import pandas as pd
 import yfinance as yf
 import numpy as np
+import plotly.graph_objects as go
 import plotly.express as px
 
 # -------------------------------------------------------
@@ -30,6 +32,13 @@ stock_ticker = st.sidebar.text_input("Enter a Stock Ticker (e.g., AAPL, TSLA):",
 start_date = st.sidebar.date_input("Start Date:", value=pd.to_datetime("2023-01-01"))
 end_date = st.sidebar.date_input("End Date:", value=pd.to_datetime("2024-01-01"))
 
+# Monte Carlo simulation parameters
+n_simulations = st.sidebar.slider("Number of Simulations:", min_value=100, max_value=1000, step=100, value=500)
+n_days = st.sidebar.slider("Days to Simulate:", min_value=30, max_value=365, step=30, value=252)
+
+# Rolling window slider for Tab 2
+rolling_window = st.sidebar.slider("Rolling Window (days):", min_value=5, max_value=60, value=20)
+
 # -------------------------------------------------------
 # Tabs Setup
 # -------------------------------------------------------
@@ -53,18 +62,18 @@ with tab1:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    # Debugging: Display the DataFrame structure
+    # Debugging outputs for visibility
     st.write("Debug: Displaying stock_data DataFrame")
     st.write("Columns in stock_data:", stock_data.columns.tolist())
     st.write("Head of stock_data:", stock_data.head())
 
-    # Handle case where no data or Close column is empty
+    # Handle case where 'Close' is missing or invalid
     if stock_data.empty:
-        st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
+        st.error("No data available for the selected stock ticker or date range.")
     elif 'Close' not in stock_data.columns:
-        st.error("The 'Close' column is not present in the data. Please try another ticker.")
+        st.error("The selected stock data does not contain 'Close' prices.")
     elif stock_data['Close'].isna().all():
-        st.error("All 'Close' values are NaN for the selected date range. Please try another ticker.")
+        st.error("The 'Close' column contains no valid data. Please choose a different stock or date range.")
     else:
         # Line chart of stock closing prices
         st.subheader("Stock Closing Prices Over Time")
@@ -81,7 +90,6 @@ with tab1:
         st.subheader("Summary Statistics")
         st.write(stock_data.describe())
 
-   
 # -------------------------------------------------------
 # Tab 2: Metrics
 # -------------------------------------------------------
@@ -92,11 +100,8 @@ with tab2:
     Adjust the rolling window size in the sidebar.
     """)
 
-    # Fetch stock data using yfinance
-    stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
-
     if stock_data.empty:
-        st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
+        st.error("No data available for the selected stock ticker or date range.")
     else:
         # Calculate daily percentage returns
         stock_data['Daily Return'] = stock_data['Close'].pct_change()
@@ -139,19 +144,16 @@ with tab3:
     Enter a second stock ticker below for comparison.
     """)
 
-    # Fetch data for the main stock
-    data1 = yf.download(stock_ticker, start=start_date, end=end_date)
-
     # Input for the second stock ticker
     stock2 = st.text_input("Enter the second stock ticker (e.g., TSLA):", value="TSLA")
     data2 = yf.download(stock2, start=start_date, end=end_date)
 
-    if data1.empty or data2.empty:
+    if stock_data.empty or data2.empty:
         st.error("One or both stock tickers returned no data. Try again with valid tickers.")
     else:
         # Calculate cumulative returns for both stocks
-        data1['Daily Return'] = data1['Close'].pct_change()
-        data1['Cumulative Return'] = (1 + data1['Daily Return']).cumprod()
+        stock_data['Daily Return'] = stock_data['Close'].pct_change()
+        stock_data['Cumulative Return'] = (1 + stock_data['Daily Return']).cumprod()
 
         data2['Daily Return'] = data2['Close'].pct_change()
         data2['Cumulative Return'] = (1 + data2['Daily Return']).cumprod()
@@ -159,7 +161,7 @@ with tab3:
         # Visualization: Closing Prices
         st.subheader("Closing Prices Comparison")
         comparison_data = pd.DataFrame({
-            stock_ticker: data1['Close'],
+            stock_ticker: stock_data['Close'],
             stock2: data2['Close']
         })
         fig = px.line(
@@ -172,7 +174,7 @@ with tab3:
         # Visualization: Cumulative Returns
         st.subheader("Cumulative Returns Comparison")
         comparison_returns = pd.DataFrame({
-            stock_ticker: data1['Cumulative Return'],
+            stock_ticker: stock_data['Cumulative Return'],
             stock2: data2['Cumulative Return']
         })
         fig = px.line(
@@ -191,9 +193,6 @@ with tab4:
     Forecast potential future stock prices using Monte Carlo simulations. 
     Adjust the simulation parameters in the sidebar.
     """)
-
-    # Fetch stock data using yfinance
-    stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
     if stock_data.empty:
         st.error("No data available for the selected stock ticker.")
@@ -263,4 +262,3 @@ with tab4:
         if st.button("Download Simulation Results"):
             simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
             st.success("Results saved as MonteCarloSimulationResults.csv")
-
