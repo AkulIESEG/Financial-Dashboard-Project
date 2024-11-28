@@ -62,22 +62,23 @@ with tab1:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    # Debug: Check stock_data DataFrame
+    # Debugging: Display stock_data for inspection
     st.write("Debug: Displaying stock_data DataFrame")
     st.write(stock_data)
 
+    # Validate if data exists and has the required 'Close' column
     if stock_data.empty:
         st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
     elif 'Close' not in stock_data.columns:
-        st.error("'Close' column is missing in the dataset. Please check the stock ticker or date range.")
+        st.error("The 'Close' column is missing from the stock data. Please check the stock ticker and date range.")
     else:
         # Line chart of stock closing prices
         st.subheader("Stock Closing Prices Over Time")
         fig = px.line(
-            stock_data,
-            x=stock_data.index,
-            y='Close',
-            title="Closing Prices",
+            stock_data, 
+            x=stock_data.index, 
+            y='Close', 
+            title="Closing Prices", 
             template="plotly_white"
         )
         st.plotly_chart(fig)
@@ -85,6 +86,7 @@ with tab1:
         # Display summary statistics
         st.subheader("Summary Statistics")
         st.write(stock_data.describe())
+
 
 # -------------------------------------------------------
 # Tab 2: Metrics
