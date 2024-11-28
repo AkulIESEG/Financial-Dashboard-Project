@@ -1,4 +1,5 @@
 
+
 # Import Libraries
 import streamlit as st
 import pandas as pd
@@ -67,12 +68,12 @@ with tab1:
     st.write("Columns in stock_data:", stock_data.columns.tolist())
     st.write("Head of stock_data:", stock_data.head())
 
-    # Handle case where 'Close' is missing or invalid
+    # Enhanced Error Handling
     if stock_data.empty:
         st.error("No data available for the selected stock ticker or date range.")
     elif 'Close' not in stock_data.columns:
         st.error("The selected stock data does not contain 'Close' prices.")
-    elif stock_data['Close'].isna().all():
+    elif stock_data['Close'].isna().sum() == len(stock_data):
         st.error("The 'Close' column contains no valid data. Please choose a different stock or date range.")
     else:
         # Line chart of stock closing prices
