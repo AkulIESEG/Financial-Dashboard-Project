@@ -65,32 +65,34 @@ with tab1:
     st.write("Debug: Displaying stock_data DataFrame")
     st.write(stock_data)
 
-    # Error handling for missing or invalid data
+    # Enhanced error handling
     if stock_data.empty:
         st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
-    elif 'Close' not in stock_data.columns:
-        st.error("The selected stock data does not contain a 'Close' column. Please try another stock ticker.")
-    elif stock_data['Close'].isna().all():
-        st.error("The 'Close' column contains only missing values. Please adjust your stock ticker or date range.")
     else:
-        # Debugging: Show columns and head of DataFrame
-        st.write("Columns in stock_data:", stock_data.columns.tolist())
-        st.write("Head of stock_data:", stock_data.head())
+        # Check if 'Close' column exists and contains valid data
+        if 'Close' not in stock_data.columns:
+            st.error("The selected stock data does not contain a 'Close' column. Please try another stock ticker.")
+        elif stock_data['Close'].isnull().sum() == len(stock_data):
+            st.error("The 'Close' column contains only missing values. Please adjust your stock ticker or date range.")
+        else:
+            # Debugging: Show columns and head of DataFrame
+            st.write("Columns in stock_data:", stock_data.columns.tolist())
+            st.write("Head of stock_data:", stock_data.head())
 
-        # Line chart of stock closing prices
-        st.subheader("Stock Closing Prices Over Time")
-        fig = px.line(
-            stock_data, 
-            x=stock_data.index, 
-            y='Close', 
-            title="Closing Prices", 
-            template="plotly_white"
-        )
-        st.plotly_chart(fig)
+            # Line chart of stock closing prices
+            st.subheader("Stock Closing Prices Over Time")
+            fig = px.line(
+                stock_data, 
+                x=stock_data.index, 
+                y='Close', 
+                title="Closing Prices", 
+                template="plotly_white"
+            )
+            st.plotly_chart(fig)
 
-        # Display summary statistics
-        st.subheader("Summary Statistics")
-        st.write(stock_data.describe())
+            # Display summary statistics
+            st.subheader("Summary Statistics")
+            st.write(stock_data.describe())
 
 
 # -------------------------------------------------------
