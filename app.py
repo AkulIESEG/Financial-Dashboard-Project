@@ -75,7 +75,7 @@ with tab1:
         st.error("No data available for the selected stock ticker or date range.")
     elif 'Close' not in stock_data.columns:
         st.error("'Close' column is missing in the data. Cannot proceed with analysis.")
-    elif stock_data['Close'].isnull().all():
+    elif stock_data['Close'].isna().sum() == len(stock_data):
         st.error("All values in the 'Close' column are null. Cannot display meaningful results.")
     else:
         # Line chart of stock closing prices
