@@ -215,11 +215,6 @@ with tab3:
 # -------------------------------------------------------
 # Tab 4: Monte Carlo Simulation
 # -------------------------------------------------------
-
-
-# -------------------------------------------------------
-# Tab 4: Monte Carlo Simulation
-# -------------------------------------------------------
 with tab4:
     st.header("Monte Carlo Simulation")
     st.write("""
@@ -272,7 +267,8 @@ with tab4:
 
         # Distribution of final prices
         st.subheader("Distribution of Final Prices")
-        final_prices = simulated_df.iloc[-1].astype(float)  # Ensure final prices are floats
+        final_prices = simulated_df.iloc[-1]
+
         fig = go.Figure()
         fig.add_trace(go.Histogram(
             x=final_prices, 
@@ -290,15 +286,26 @@ with tab4:
         st.plotly_chart(fig)
 
         # Probability for threshold
+        st.subheader("Probability Analysis")
+        st.write("Enter a threshold price to analyze the probability of the stock's simulated price being below this value.")
+
         threshold = st.number_input("Enter a threshold price:", value=150.0)
-        try:
+
+        # Debugging steps
+        st.write("Debug: final_prices data type:", type(final_prices))
+        st.write("Debug: final_prices values:", final_prices)
+
+        # Ensure final_prices is numeric
+        final_prices = pd.to_numeric(final_prices, errors='coerce').dropna()
+
+        if not final_prices.empty:
+            # Calculate probability
             probability_below_threshold = (final_prices < threshold).mean() * 100
             st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
-        except Exception as e:
-            st.error(f"An error occurred while calculating probabilities: {str(e)}")
+        else:
+            st.error("Error: No valid final prices available for probability calculation.")
 
         # Download results
         if st.button("Download Simulation Results"):
             simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
             st.success("Results saved as MonteCarloSimulationResults.csv")
-
