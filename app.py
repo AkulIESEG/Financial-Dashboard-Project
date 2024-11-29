@@ -220,8 +220,8 @@ with tab4:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    if stock_data.empty or 'Close' not in stock_data.columns or stock_data['Close'].isna().all():
-        st.error("No valid stock data available. Try a different ticker or adjust the date range.")
+    if stock_data.empty:
+        st.error("No data available for the selected stock ticker.")
     else:
         # Calculate daily returns
         daily_returns = stock_data['Close'].pct_change().dropna()
@@ -262,7 +262,7 @@ with tab4:
 
         # Distribution of final prices
         st.subheader("Distribution of Final Prices")
-        final_prices = simulated_df.iloc[-1].values.flatten()  # Ensure final_prices is 1D
+        final_prices = simulated_df.iloc[-1].values.flatten()  # Flatten to ensure compatibility
         fig = go.Figure()
         fig.add_trace(go.Histogram(
             x=final_prices, 
@@ -281,13 +281,14 @@ with tab4:
 
         # Probability for threshold
         threshold = st.number_input("Enter a threshold price:", value=150.0)
-        probability_below_threshold = np.mean(final_prices < threshold) * 100
+        probability_below_threshold = (final_prices < threshold).mean() * 100  # Compute probability
         st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
 
         # Download results
         if st.button("Download Simulation Results"):
             simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
             st.success("Results saved as MonteCarloSimulationResults.csv")
+
 
 
 
