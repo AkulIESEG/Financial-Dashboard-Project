@@ -50,6 +50,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Monte Carlo Simulation"
 ])
 
+
 # -------------------------------------------------------
 # Tab 1: Overview
 # -------------------------------------------------------
@@ -75,19 +76,22 @@ with tab1:
         st.error("No data available for the selected stock ticker or date range.")
     elif 'Close' not in stock_data.columns:
         st.error("'Close' column is missing in the data. Cannot proceed with analysis.")
-    elif len(stock_data['Close'].dropna()) == 0:
-        st.error("The 'Close' column contains only null values. Cannot display meaningful results.")
+    elif stock_data['Close'].dropna().empty:
+        st.error("The 'Close' column contains no valid data. Cannot display meaningful results.")
     else:
-        # Line chart of stock closing prices
-        st.subheader("Stock Closing Prices Over Time")
-        fig = px.line(
-            stock_data,
-            x=stock_data.index,
-            y='Close',
-            title="Closing Prices Over Time",
-            template="plotly_white"
-        )
-        st.plotly_chart(fig)
+        # Ensure that the 'Close' column is correctly formatted
+        try:
+            st.subheader("Stock Closing Prices Over Time")
+            fig = px.line(
+                stock_data.reset_index(),  # Reset index for Plotly compatibility
+                x='Date',  # Explicitly specify the x-axis column
+                y='Close',  # Explicitly specify the y-axis column
+                title="Closing Prices Over Time",
+                template="plotly_white"
+            )
+            st.plotly_chart(fig)
+        except Exception as e:
+            st.error(f"An error occurred while generating the plot: {e}")
 
         # Display summary statistics
         st.subheader("Summary Statistics")
