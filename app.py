@@ -52,7 +52,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 #Tab 1
 
-
 with tab1:
     st.header("Overview")
     st.write("""
@@ -99,9 +98,11 @@ with tab1:
 
         # Display summary statistics
         st.subheader("Summary Statistics")
-        st.write(stock_data[['Close']].describe())
-
-
+        try:
+            summary_stats = stock_data[['Close']].describe()
+            st.write(summary_stats)
+        except Exception as e:
+            st.error(f"An error occurred while displaying summary statistics: {e}")
 
 
 # -------------------------------------------------------
