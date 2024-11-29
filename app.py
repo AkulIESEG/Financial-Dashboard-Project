@@ -212,76 +212,83 @@ with tab3:
 # Tab 4: Monte Carlo Simulation
 # -------------------------------------------------------
 
+
 import streamlit as st
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
-# Monte Carlo Simulation Tab
+# Tab 4: Monte Carlo Simulation
 st.title("Monte Carlo Simulation")
-st.write("Forecast potential future stock prices using Monte Carlo simulations. Adjust the simulation parameters in the sidebar.")
 
-# Sidebar inputs for Monte Carlo simulation
-st.sidebar.header("Simulation Parameters")
-num_simulations = st.sidebar.number_input("Number of Simulations", min_value=1, value=1000)
-time_horizon = st.sidebar.number_input("Time Horizon (Days)", min_value=1, value=252)
-start_price = st.sidebar.number_input("Starting Stock Price", min_value=0.0, value=100.0)
-mu = st.sidebar.number_input("Expected Daily Return (Mean)", min_value=-1.0, max_value=1.0, value=0.001)
-sigma = st.sidebar.number_input("Expected Daily Volatility (Std Dev)", min_value=0.0, max_value=1.0, value=0.02)
+st.markdown(
+    "Forecast potential future stock prices using Monte Carlo simulations. Adjust the simulation parameters in the sidebar."
+)
 
-# Run the Monte Carlo simulation
-st.write("### Simulated Price Paths")
-try:
-    simulations = np.zeros((time_horizon, num_simulations))
-    simulations[0] = start_price
-    for t in range(1, time_horizon):
-        simulations[t] = simulations[t-1] * (1 + np.random.normal(mu, sigma, num_simulations))
-    
+# Sidebar inputs
+st.sidebar.header("Monte Carlo Simulation Parameters")
+simulations = st.sidebar.number_input("Number of simulations", min_value=100, max_value=10000, value=500)
+time_horizon = st.sidebar.number_input("Time horizon (days)", min_value=30, max_value=365, value=250)
+
+# Retrieve stock data (example for illustration purposes)
+stock_data = st.session_state.get("stock_data")  # Assuming stock_data is stored in session_state
+
+if stock_data is not None:
+    # Extract closing prices
+    closing_prices = stock_data['Close']
+
+    # Calculate daily returns
+    daily_returns = closing_prices.pct_change().dropna()
+
+    # Compute mean and standard deviation of daily returns
+    mean_return = daily_returns.mean()
+    std_dev_return = daily_returns.std()
+
+    # Monte Carlo simulation
+    last_price = closing_prices.iloc[-1]
+    simulations_data = np.zeros((time_horizon, simulations))
+
+    for sim in range(simulations):
+        prices = [last_price]
+        for day in range(time_horizon):
+            next_price = prices[-1] * (1 + np.random.normal(mean_return, std_dev_return))
+            prices.append(next_price)
+        simulations_data[:, sim] = prices[1:]  # Exclude the initial price
+
     # Plot simulated price paths
+    st.subheader("Simulated Price Paths")
     plt.figure(figsize=(10, 6))
-    plt.plot(simulations)
-    plt.title("Simulated Price Paths")
-    plt.xlabel("Time (Days)")
+    plt.plot(simulations_data)
+    plt.title("Monte Carlo Simulation of Stock Prices")
+    plt.xlabel("Day")
     plt.ylabel("Price")
     st.pyplot(plt)
-except Exception as e:
-    st.error(f"An error occurred while running the simulation: {e}")
-    st.stop()
 
-# Calculate final prices and their distribution
-final_prices = simulations[-1]
-st.write("### Distribution of Final Prices")
-try:
-    # Plot the distribution of final prices
+    # Distribution of final prices
+    st.subheader("Distribution of Final Prices")
+    final_prices = simulations_data[-1, :]  # Take the last row (final prices of all simulations)
     plt.figure(figsize=(10, 6))
-    plt.hist(final_prices, bins=50, alpha=0.75, color="blue")
+    plt.hist(final_prices, bins=50, edgecolor='k')
     plt.title("Distribution of Final Prices")
     plt.xlabel("Price")
     plt.ylabel("Frequency")
     st.pyplot(plt)
-except Exception as e:
-    st.error(f"An error occurred while plotting the distribution: {e}")
-    st.stop()
 
-# Threshold analysis
-st.write("### Threshold Analysis")
-threshold = st.number_input("Enter a threshold price:", value=150.0)
+    # Threshold analysis
+    st.subheader("Threshold Analysis")
+    threshold = st.number_input("Enter a threshold price:", value=150.00)
 
-# Ensure final_prices is 1D and handle threshold comparisons
-try:
-    final_prices = final_prices.flatten() if hasattr(final_prices, 'flatten') else final_prices
-    threshold = float(threshold)  # Ensure threshold is a float
-    
-    # Calculate probabilities
-    probability_below_threshold = (final_prices < threshold).mean() * 100
-    probability_above_threshold = (final_prices >= threshold).mean() * 100
-    
-    st.write(f"Probability that final prices are below {threshold}: {probability_below_threshold:.2f}%")
-    st.write(f"Probability that final prices are above {threshold}: {probability_above_threshold:.2f}%")
-except ValueError:
-    st.error("Threshold must be a numeric value.")
-    st.stop()
-except Exception as e:
-    st.error(f"An error occurred while calculating probabilities: {e}")
-    st.stop()
+    try:
+        # Ensure `final_prices` is flattened to a 1D array for comparison
+        final_prices_1d = final_prices.flatten() if final_prices.ndim > 1 else final_prices
+
+        # Calculate probabilities
+        probability_below_threshold = np.mean(final_prices_1d < threshold) * 100
+        probability_above_threshold = np.mean(final_prices_1d > threshold) * 100
+
+        st.write(f"Probability of final price below ${threshold}: {probability_below_threshold:.2f}%")
+        st.write(f"Probability of final price above ${threshold}: {probability_above_threshold:.2f}%")
+    except Exception as e:
+        st.error(f"An error occurred during threshold analysis: {e}")
+else:
+    st.error("Stock data is not available. Please select a valid stock in the Overview tab.")
 
