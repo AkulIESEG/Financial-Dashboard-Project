@@ -212,94 +212,71 @@ with tab3:
 # -------------------------------------------------------
 
 
-# -------------------------------------------------------
 # Tab 4: Monte Carlo Simulation
-# -------------------------------------------------------
-with tab4:
-    st.header("Monte Carlo Simulation")
-    st.write("""
-    Forecast potential future stock prices using Monte Carlo simulations. 
-    Adjust the simulation parameters in the sidebar.
-    """)
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
-    # Fetch stock data using yfinance
-    stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
+# Tab 4 content
+st.header("Monte Carlo Simulation")
+st.write("Forecast potential future stock prices using Monte Carlo simulations. Adjust the simulation parameters in the sidebar.")
 
-    if stock_data.empty or 'Close' not in stock_data.columns:
-        st.error("No valid data available for the selected stock ticker.")
+# Sidebar Inputs
+st.sidebar.subheader("Monte Carlo Parameters")
+num_simulations = st.sidebar.number_input("Number of Simulations", min_value=1, max_value=1000, value=100, step=10)
+num_days = st.sidebar.number_input("Number of Days", min_value=1, max_value=365, value=30, step=1)
+initial_price = st.sidebar.number_input("Initial Stock Price", min_value=0.01, value=100.0, step=1.0)
+volatility = st.sidebar.number_input("Volatility (%)", min_value=0.01, max_value=100.0, value=20.0, step=0.1) / 100
+drift = st.sidebar.number_input("Drift (%)", min_value=-100.0, max_value=100.0, value=5.0, step=0.1) / 100
+
+# Threshold Input
+threshold = st.number_input("Enter a threshold price:", min_value=0.0, value=150.0, step=1.0)
+
+# Generate Monte Carlo Simulation
+st.subheader("Simulated Price Paths")
+np.random.seed(42)  # For reproducibility
+daily_returns = np.random.normal(loc=drift / num_days, scale=volatility / np.sqrt(num_days), size=(num_days, num_simulations))
+price_paths = np.zeros_like(daily_returns)
+price_paths[0] = initial_price
+
+# Simulate Price Paths
+for t in range(1, num_days):
+    price_paths[t] = price_paths[t - 1] * (1 + daily_returns[t])
+
+# Plot Simulated Paths
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(price_paths, alpha=0.6)
+ax.set_title("Monte Carlo Simulation of Stock Price Paths")
+ax.set_xlabel("Days")
+ax.set_ylabel("Price")
+st.pyplot(fig)
+
+# Distribution of Final Prices
+st.subheader("Distribution of Final Prices")
+final_prices = price_paths[-1]
+
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.hist(final_prices, bins=30, color='blue', alpha=0.7)
+ax.axvline(initial_price, color='red', linestyle='dashed', linewidth=2, label="Initial Price")
+ax.set_title("Distribution of Final Stock Prices")
+ax.set_xlabel("Price")
+ax.set_ylabel("Frequency")
+ax.legend()
+st.pyplot(fig)
+
+# Probability Below Threshold
+st.subheader("Probability Below Threshold")
+try:
+    # Ensure final_prices is 1D and compatible with threshold
+    final_prices_series = pd.Series(final_prices.flatten()) if len(final_prices.shape) > 1 else pd.Series(final_prices)
+
+    # Check if threshold is valid
+    if not isinstance(threshold, (int, float)):
+        st.error("Threshold must be a numeric value.")
     else:
-        # Calculate daily returns
-        daily_returns = stock_data['Close'].pct_change().dropna()
-        mean_return = daily_returns.mean()
-        std_dev_return = daily_returns.std()
-
-        # Monte Carlo Simulation
-        last_price = stock_data['Close'].iloc[-1]
-        simulated_paths = []
-        for _ in range(n_simulations):
-            path = [last_price]
-            for _ in range(n_days):
-                next_price = path[-1] * (1 + np.random.normal(mean_return, std_dev_return))
-                path.append(next_price)
-            simulated_paths.append(path)
-
-        # Convert results to DataFrame
-        simulated_df = pd.DataFrame(simulated_paths).T
-
-        # Simulated paths chart
-        st.subheader("Simulated Price Paths")
-        fig = go.Figure()
-        for col in simulated_df.columns:
-            fig.add_trace(go.Scatter(
-                x=list(range(len(simulated_df))), 
-                y=simulated_df[col], 
-                mode="lines", 
-                line=dict(width=1), 
-                opacity=0.5
-            ))
-        fig.update_layout(
-            title="Monte Carlo Simulated Price Paths", 
-            xaxis_title="Days", 
-            yaxis_title="Price", 
-            template="plotly_white"
-        )
-        st.plotly_chart(fig)
-
-        # Distribution of final prices
-        st.subheader("Distribution of Final Prices")
-        final_prices = simulated_df.iloc[-1].values  # Ensure final_prices is a 1D array
-        fig = go.Figure()
-        fig.add_trace(go.Histogram(
-            x=final_prices, 
-            nbinsx=20, 
-            histnorm='probability', 
-            marker_color='blue', 
-            opacity=0.75
-        ))
-        fig.update_layout(
-            title="Final Simulated Prices", 
-            xaxis_title="Price", 
-            yaxis_title="Probability", 
-            template="plotly_white"
-        )
-        st.plotly_chart(fig)
-
-        # Probability for threshold
-        st.subheader("Probability of Price Falling Below a Threshold")
-        threshold = st.number_input("Enter a threshold price:", value=150.0)
-        try:
-            # Ensure final_prices is a 1D array before comparison
-            probability_below_threshold = (final_prices < threshold).mean() * 100
-            st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
-        except Exception as e:
-            st.error(f"An error occurred while calculating probabilities: {e}")
-
-        # Download results
-        if st.button("Download Simulation Results"):
-            simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
-            st.success("Results saved as MonteCarloSimulationResults.csv")
-
-
-
-
+        probability_below_threshold = (final_prices_series < threshold).mean() * 100
+        st.write(f"Probability of prices falling below {threshold}: **{probability_below_threshold:.2f}%**")
+except Exception as e:
+    st.error(f"An error occurred while calculating the probability: {str(e)}")
 
