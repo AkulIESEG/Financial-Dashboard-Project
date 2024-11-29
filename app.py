@@ -220,76 +220,76 @@ with tab4:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    if stock_data.empty or 'Close' not in stock_data.columns:
+    if stock_data.empty:
         st.error("No data available for the selected stock ticker.")
     else:
-        try:
-            # Calculate daily returns
-            daily_returns = stock_data['Close'].pct_change().dropna()
-            mean_return = daily_returns.mean()
-            std_dev_return = daily_returns.std()
+        # Calculate daily returns
+        daily_returns = stock_data['Close'].pct_change().dropna()
+        mean_return = daily_returns.mean()
+        std_dev_return = daily_returns.std()
 
-            # Monte Carlo Simulation
-            last_price = stock_data['Close'].iloc[-1]
-            simulated_paths = []
-            for _ in range(n_simulations):
-                path = [last_price]
-                for _ in range(n_days):
-                    next_price = path[-1] * (1 + np.random.normal(mean_return, std_dev_return))
-                    path.append(next_price)
-                simulated_paths.append(path)
+        # Monte Carlo Simulation
+        last_price = stock_data['Close'].iloc[-1]
+        simulated_paths = []
+        for _ in range(n_simulations):
+            path = [last_price]
+            for _ in range(n_days):
+                next_price = path[-1] * (1 + np.random.normal(mean_return, std_dev_return))
+                path.append(next_price)
+            simulated_paths.append(path)
 
-            # Convert results to DataFrame
-            simulated_df = pd.DataFrame(simulated_paths).T
+        # Convert results to DataFrame
+        simulated_df = pd.DataFrame(simulated_paths).T
 
-            # Simulated paths chart
-            st.subheader("Simulated Price Paths")
-            fig = go.Figure()
-            for col in simulated_df.columns:
-                fig.add_trace(go.Scatter(
-                    x=list(range(len(simulated_df))), 
-                    y=simulated_df[col], 
-                    mode="lines", 
-                    line=dict(width=1), 
-                    opacity=0.5
-                ))
-            fig.update_layout(
-                title="Monte Carlo Simulated Price Paths", 
-                xaxis_title="Days", 
-                yaxis_title="Price", 
-                template="plotly_white"
-            )
-            st.plotly_chart(fig)
-
-            # Distribution of final prices
-            st.subheader("Distribution of Final Prices")
-            final_prices = simulated_df.iloc[-1]  # Ensure this is a pandas Series
-            final_prices = final_prices.reset_index(drop=True)  # Reset index to ensure it behaves as expected
-            fig = go.Figure()
-            fig.add_trace(go.Histogram(
-                x=final_prices, 
-                nbinsx=20, 
-                histnorm='probability', 
-                marker_color='blue', 
-                opacity=0.75
+        # Simulated paths chart
+        st.subheader("Simulated Price Paths")
+        fig = go.Figure()
+        for col in simulated_df.columns:
+            fig.add_trace(go.Scatter(
+                x=list(range(len(simulated_df))), 
+                y=simulated_df[col], 
+                mode="lines", 
+                line=dict(width=1), 
+                opacity=0.5
             ))
-            fig.update_layout(
-                title="Final Simulated Prices", 
-                xaxis_title="Price", 
-                yaxis_title="Probability", 
-                template="plotly_white"
-            )
-            st.plotly_chart(fig)
+        fig.update_layout(
+            title="Monte Carlo Simulated Price Paths", 
+            xaxis_title="Days", 
+            yaxis_title="Price", 
+            template="plotly_white"
+        )
+        st.plotly_chart(fig)
 
-            # Probability for threshold
-            threshold = st.number_input("Enter a threshold price:", value=150.0)
+        # Distribution of final prices
+        st.subheader("Distribution of Final Prices")
+        final_prices = simulated_df.iloc[-1].values.flatten()  # Ensure it's 1-dimensional
+        fig = go.Figure()
+        fig.add_trace(go.Histogram(
+            x=final_prices, 
+            nbinsx=20, 
+            histnorm='probability', 
+            marker_color='blue', 
+            opacity=0.75
+        ))
+        fig.update_layout(
+            title="Final Simulated Prices", 
+            xaxis_title="Price", 
+            yaxis_title="Probability", 
+            template="plotly_white"
+        )
+        st.plotly_chart(fig)
+
+        # Probability for threshold
+        threshold = st.number_input("Enter a threshold price:", value=150.0)
+        try:
             probability_below_threshold = (final_prices < threshold).mean() * 100
             st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
-
-            # Download results
-            if st.button("Download Simulation Results"):
-                simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
-                st.success("Results saved as MonteCarloSimulationResults.csv")
         except Exception as e:
-            st.error(f"An error occurred during Monte Carlo simulation: {e}")
+            st.error(f"An error occurred while calculating probability: {e}")
+
+        # Download results
+        if st.button("Download Simulation Results"):
+            simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
+            st.success("Results saved as MonteCarloSimulationResults.csv")
+
 
