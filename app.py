@@ -206,18 +206,18 @@ with tab3:
             st.error(f"An error occurred while generating the plot: {e}")
 
 
+#Tab 4
 
-# -------------------------------------------------------
-# Tab 4: Monte Carlo Simulation
-# -------------------------------------------------------
+
+# Monte Carlo Simulation tab
 with tab4:
     st.header("Monte Carlo Simulation")
     st.write("""
-    Forecast potential future stock prices using Monte Carlo simulations. 
+    Forecast potential future stock prices using Monte Carlo simulations.
     Adjust the simulation parameters in the sidebar.
     """)
 
-    # Fetch stock data using yfinance
+    # Fetch stock data
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
     if stock_data.empty:
@@ -246,48 +246,49 @@ with tab4:
         fig = go.Figure()
         for col in simulated_df.columns:
             fig.add_trace(go.Scatter(
-                x=list(range(len(simulated_df))), 
-                y=simulated_df[col], 
-                mode="lines", 
-                line=dict(width=1), 
+                x=list(range(len(simulated_df))),
+                y=simulated_df[col],
+                mode="lines",
+                line=dict(width=1),
                 opacity=0.5
             ))
         fig.update_layout(
-            title="Monte Carlo Simulated Price Paths", 
-            xaxis_title="Days", 
-            yaxis_title="Price", 
+            title="Monte Carlo Simulated Price Paths",
+            xaxis_title="Days",
+            yaxis_title="Price",
             template="plotly_white"
         )
         st.plotly_chart(fig)
 
         # Distribution of final prices
         st.subheader("Distribution of Final Prices")
-        final_prices = simulated_df.iloc[-1].values.flatten()  # Flatten to ensure compatibility
+        final_prices = simulated_df.iloc[-1].values.flatten()  # Ensure it's 1-dimensional
         fig = go.Figure()
         fig.add_trace(go.Histogram(
-            x=final_prices, 
-            nbinsx=20, 
-            histnorm='probability', 
-            marker_color='blue', 
+            x=final_prices,
+            nbinsx=20,
+            histnorm='probability',
+            marker_color='blue',
             opacity=0.75
         ))
         fig.update_layout(
-            title="Final Simulated Prices", 
-            xaxis_title="Price", 
-            yaxis_title="Probability", 
+            title="Final Simulated Prices",
+            xaxis_title="Price",
+            yaxis_title="Probability",
             template="plotly_white"
         )
         st.plotly_chart(fig)
 
         # Probability for threshold
         threshold = st.number_input("Enter a threshold price:", value=150.0)
-        probability_below_threshold = (final_prices < threshold).mean() * 100  # Compute probability
+        probability_below_threshold = (final_prices < threshold).mean() * 100
         st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
 
         # Download results
         if st.button("Download Simulation Results"):
             simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
             st.success("Results saved as MonteCarloSimulationResults.csv")
+
 
 
 
