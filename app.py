@@ -211,7 +211,8 @@ with tab3:
 # Tab 4: Monte Carlo Simulation
 # -------------------------------------------------------
 
-# Monte Carlo Simulation Tab
+
+# Tab 4: Monte Carlo Simulation
 with tab4:
     st.header("Monte Carlo Simulation")
     st.write("""
@@ -222,8 +223,8 @@ with tab4:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    if stock_data.empty:
-        st.error("No data available for the selected stock ticker.")
+    if stock_data.empty or 'Close' not in stock_data.columns:
+        st.error("No data available for the selected stock ticker or the 'Close' column is missing.")
     else:
         # Calculate daily returns
         daily_returns = stock_data['Close'].pct_change().dropna()
@@ -264,7 +265,7 @@ with tab4:
 
         # Distribution of final prices
         st.subheader("Distribution of Final Prices")
-        final_prices = simulated_df.iloc[-1].values  # Ensure it's a 1D array
+        final_prices = pd.Series(simulated_df.iloc[-1].values)  # Explicitly convert to Series
         fig = go.Figure()
         fig.add_trace(go.Histogram(
             x=final_prices, 
@@ -283,17 +284,13 @@ with tab4:
 
         # Probability for threshold
         threshold = st.number_input("Enter a threshold price:", value=150.0)
-        try:
-            probability_below_threshold = (final_prices < threshold).mean() * 100
-            st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
-        except Exception as e:
-            st.error(f"An error occurred while calculating the probability: {e}")
+        probability_below_threshold = (final_prices < threshold).mean() * 100
+        st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
 
         # Download results
         if st.button("Download Simulation Results"):
             simulated_df.to_csv("MonteCarloSimulationResults.csv", index=False)
             st.success("Results saved as MonteCarloSimulationResults.csv")
-
 
 
 
