@@ -213,64 +213,74 @@ with tab3:
 # -------------------------------------------------------
 
 
+
 import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Simulating price paths
-def simulate_price_paths(last_price, daily_returns, num_simulations, time_horizon):
-    price_paths = np.zeros((num_simulations, time_horizon))
+# Function to simulate Monte Carlo paths
+def simulate_monte_carlo(stock_data, num_simulations=1000, num_days=252, threshold=150.00):
+    returns = stock_data['Close'].pct_change()
+    mean_return = returns.mean()
+    volatility = returns.std()
+
+    # Simulating the future price paths
+    simulations = np.zeros((num_simulations, num_days))
     for i in range(num_simulations):
-        prices = [last_price]
-        for t in range(1, time_horizon):
-            price = prices[-1] * np.exp(np.random.normal(daily_returns.mean(), daily_returns.std()))
-            prices.append(price)
-        price_paths[i] = prices
-    return price_paths
+        price_path = [stock_data['Close'].iloc[-1]]
+        for t in range(1, num_days):
+            price_path.append(price_path[-1] * (1 + np.random.normal(mean_return, volatility)))
+        simulations[i] = price_path
 
-# Tab 4 - Monte Carlo Simulation
-st.subheader("Monte Carlo Simulation")
-num_simulations = st.sidebar.number_input("Number of Simulations", min_value=100, max_value=10000, value=1000)
-time_horizon = st.sidebar.number_input("Time Horizon (days)", min_value=30, max_value=365, value=250)
+    return simulations
 
-# Assuming stock_data is available and has a 'Close' column with the historical stock data.
-# Example: stock_data = pd.read_csv('some_stock_data.csv')
+# Function to calculate probability of crossing threshold
+def calculate_probability(final_prices, threshold):
+    # Ensure final_prices is 1-dimensional
+    final_prices = final_prices.flatten() if isinstance(final_prices, pd.DataFrame) or final_prices.ndim > 1 else final_prices
 
-# Here, I assume you have already loaded 'stock_data' and calculated 'daily_returns'
-# Example of how you might calculate 'daily_returns' if not defined already:
-# stock_data['Daily Return'] = stock_data['Close'].pct_change()
-# daily_returns = stock_data['Daily Return'].dropna()
+    # Ensure threshold is a scalar
+    if not isinstance(threshold, (float, int)):
+        raise ValueError("Threshold must be a scalar (float or int).")
 
-# For this example, we will assume 'daily_returns' is predefined.
+    # Calculating the probability of prices below the threshold
+    probability_below_threshold = (final_prices < threshold).mean() * 100
+    return probability_below_threshold
+
+# Streamlit UI components
+st.title("Monte Carlo Simulation for Stock Prices")
+st.sidebar.header("Simulation Parameters")
+
+# Stock data input (example using AAPL)
+stock_data = pd.read_csv('AAPL.csv')  # replace with actual stock data loading method
+st.sidebar.markdown("### Stock Data")
+st.sidebar.write(stock_data.tail())
+
+num_simulations = st.sidebar.number_input("Number of Simulations", min_value=100, max_value=5000, value=1000)
+num_days = st.sidebar.number_input("Number of Days (Forecast)", min_value=10, max_value=500, value=252)
+threshold = st.sidebar.number_input("Threshold Price", min_value=0.0, value=150.00)
 
 # Simulate price paths
-try:
-    simulated_prices = simulate_price_paths(stock_data['Close'].iloc[-1], daily_returns, num_simulations, time_horizon)
-    st.line_chart(simulated_prices)
-    
-    st.write("Distribution of Final Prices")
-    final_prices = simulated_prices[:, -1]  # Get the last column (final prices)
-    
-    # Ensure final_prices is a 1-dimensional array if it's not already
-    if isinstance(final_prices, pd.DataFrame):
-        final_prices = final_prices.squeeze()  # Convert to Series if it's a single-column DataFrame
+simulations = simulate_monte_carlo(stock_data, num_simulations, num_days, threshold)
 
-    # Plot distribution of final prices
-    fig, ax = plt.subplots()
-    ax.hist(final_prices, bins=50, alpha=0.75)
-    st.pyplot(fig)
+# Plot the simulated price paths
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(simulations.T, color='blue', alpha=0.1)
+ax.set_title('Monte Carlo Simulations of Stock Price Paths')
+ax.set_xlabel('Days')
+ax.set_ylabel('Price ($)')
+st.pyplot(fig)
 
-    # Input threshold price
-    threshold = st.number_input("Enter a threshold price:", value=150.0)
-    
-    # Calculate probability of the final price being below the threshold
-    try:
-        probability_below_threshold = (final_prices < threshold).mean() * 100
-        st.write(f"Probability of price being below {threshold}: {probability_below_threshold:.2f}%")
-    except Exception as e:
-        st.error(f"An error occurred while calculating probabilities: {e}")
-        st.write("Could not calculate the probability.")
-except Exception as e:
-    st.error(f"An error occurred while simulating price paths: {e}")
+# Distribution of final prices
+final_prices = simulations[:, -1]
+fig2, ax2 = plt.subplots(figsize=(10, 6))
+ax2.hist(final_prices, bins=50, color='green', edgecolor='black')
+ax2.set_title('Distribution of Final Prices')
+ax2.set_xlabel('Price ($)')
+ax2.set_ylabel('Frequency')
+st.pyplot(fig2)
 
+# Calculate and display probability of price crossing the threshold
+probability_below_threshold = calculate_probability(final_prices, threshold)
+st.write(f"Probability of the stock price falling below {threshold} in {num_days} days: {probability_below_threshold:.2f}%")
