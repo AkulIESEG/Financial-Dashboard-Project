@@ -78,16 +78,18 @@ with tab1:
     elif stock_data['Close'].dropna().empty:
         st.error("The 'Close' column contains no valid data. Cannot display meaningful results.")
     else:
-        # Ensure that the 'Close' column is correctly formatted
-        stock_data['Date'] = stock_data.index  # Add index as a column for plotting
-        stock_data = stock_data.reset_index(drop=True)  # Reset index for Plotly compatibility
+        # Ensure that the 'Close' column is a 1D Series
+        stock_data['Close'] = stock_data['Close'].squeeze()  # Flatten any multi-dimensional data
+
+        # Reset the index for Plotly compatibility
+        stock_data.reset_index(inplace=True)
 
         st.subheader("Stock Closing Prices Over Time")
         try:
             fig = px.line(
                 stock_data,
-                x='Date',
-                y='Close',
+                x='Date',  # Explicitly use the 'Date' column for the x-axis
+                y='Close',  # Explicitly use the 'Close' column for the y-axis
                 title="Closing Prices Over Time",
                 template="plotly_white"
             )
@@ -97,7 +99,8 @@ with tab1:
 
         # Display summary statistics
         st.subheader("Summary Statistics")
-        st.write(stock_data.describe())
+        st.write(stock_data[['Close']].describe())
+
 
 
 
