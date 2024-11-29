@@ -272,7 +272,7 @@ with tab4:
 
         # Distribution of final prices
         st.subheader("Distribution of Final Prices")
-        final_prices = simulated_df.iloc[-1]
+        final_prices = simulated_df.iloc[-1].astype(float)  # Ensure final prices are floats
         fig = go.Figure()
         fig.add_trace(go.Histogram(
             x=final_prices, 
@@ -290,18 +290,12 @@ with tab4:
         st.plotly_chart(fig)
 
         # Probability for threshold
-        st.subheader("Probability Analysis for Threshold Price")
         threshold = st.number_input("Enter a threshold price:", value=150.0)
-
-        # Ensure final_prices is in the correct numeric format
         try:
-            if not final_prices.empty and final_prices.ndim == 1:  # Ensure final_prices is 1D
-                probability_below_threshold = (final_prices < threshold).mean() * 100
-                st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
-            else:
-                st.error("Final prices data is empty or in an unexpected format.")
+            probability_below_threshold = (final_prices < threshold).mean() * 100
+            st.write(f"Probability of falling below ${threshold}: {probability_below_threshold:.2f}%")
         except Exception as e:
-            st.error(f"An error occurred while calculating the probability: {e}")
+            st.error(f"An error occurred while calculating probabilities: {str(e)}")
 
         # Download results
         if st.button("Download Simulation Results"):
