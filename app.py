@@ -50,10 +50,9 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Monte Carlo Simulation"
 ])
 
+#Tab 1
 
-# -------------------------------------------------------
-# Tab 1: Overview
-# -------------------------------------------------------
+
 with tab1:
     st.header("Overview")
     st.write("""
@@ -80,12 +79,15 @@ with tab1:
         st.error("The 'Close' column contains no valid data. Cannot display meaningful results.")
     else:
         # Ensure that the 'Close' column is correctly formatted
+        stock_data['Date'] = stock_data.index  # Add index as a column for plotting
+        stock_data = stock_data.reset_index(drop=True)  # Reset index for Plotly compatibility
+
+        st.subheader("Stock Closing Prices Over Time")
         try:
-            st.subheader("Stock Closing Prices Over Time")
             fig = px.line(
-                stock_data.reset_index(),  # Reset index for Plotly compatibility
-                x='Date',  # Explicitly specify the x-axis column
-                y='Close',  # Explicitly specify the y-axis column
+                stock_data,
+                x='Date',
+                y='Close',
                 title="Closing Prices Over Time",
                 template="plotly_white"
             )
@@ -96,6 +98,7 @@ with tab1:
         # Display summary statistics
         st.subheader("Summary Statistics")
         st.write(stock_data.describe())
+
 
 
 # -------------------------------------------------------
@@ -145,6 +148,7 @@ with tab2:
 # -------------------------------------------------------
 # Tab 3: Comparison
 # -------------------------------------------------------
+
 with tab3:
     st.header("Comparative Analysis")
     st.write("""
@@ -152,45 +156,51 @@ with tab3:
     Enter a second stock ticker below for comparison.
     """)
 
+    # Fetch data for the main stock
+    data1 = yf.download(stock_ticker, start=start_date, end=end_date)
+
     # Input for the second stock ticker
     stock2 = st.text_input("Enter the second stock ticker (e.g., TSLA):", value="TSLA")
     data2 = yf.download(stock2, start=start_date, end=end_date)
 
-    if stock_data.empty or data2.empty:
+    if data1.empty or data2.empty:
         st.error("One or both stock tickers returned no data. Try again with valid tickers.")
     else:
-        # Calculate cumulative returns for both stocks
-        stock_data['Daily Return'] = stock_data['Close'].pct_change()
-        stock_data['Cumulative Return'] = (1 + stock_data['Daily Return']).cumprod()
-
-        data2['Daily Return'] = data2['Close'].pct_change()
-        data2['Cumulative Return'] = (1 + data2['Daily Return']).cumprod()
+        # Align indices
+        data1 = data1[['Close']].rename(columns={'Close': stock_ticker})
+        data2 = data2[['Close']].rename(columns={'Close': stock2})
+        comparison_data = pd.concat([data1, data2], axis=1).dropna()
 
         # Visualization: Closing Prices
         st.subheader("Closing Prices Comparison")
-        comparison_data = pd.DataFrame({
-            stock_ticker: stock_data['Close'],
-            stock2: data2['Close']
-        })
-        fig = px.line(
-            comparison_data, 
-            title="Closing Prices Comparison", 
-            template="plotly_white"
-        )
-        st.plotly_chart(fig)
+        try:
+            fig = px.line(
+                comparison_data.reset_index(),
+                x='Date',
+                y=comparison_data.columns,
+                title="Closing Prices Comparison",
+                template="plotly_white"
+            )
+            st.plotly_chart(fig)
+        except Exception as e:
+            st.error(f"An error occurred while generating the plot: {e}")
 
         # Visualization: Cumulative Returns
         st.subheader("Cumulative Returns Comparison")
-        comparison_returns = pd.DataFrame({
-            stock_ticker: stock_data['Cumulative Return'],
-            stock2: data2['Cumulative Return']
-        })
-        fig = px.line(
-            comparison_returns, 
-            title="Cumulative Returns Comparison", 
-            template="plotly_white"
-        )
-        st.plotly_chart(fig)
+        comparison_data[stock_ticker] = (comparison_data[stock_ticker].pct_change() + 1).cumprod()
+        comparison_data[stock2] = (comparison_data[stock2].pct_change() + 1).cumprod()
+        try:
+            fig = px.line(
+                comparison_data.reset_index(),
+                x='Date',
+                y=comparison_data.columns,
+                title="Cumulative Returns Comparison",
+                template="plotly_white"
+            )
+            st.plotly_chart(fig)
+        except Exception as e:
+            st.error(f"An error occurred while generating the plot: {e}")
+
 
 # -------------------------------------------------------
 # Tab 4: Monte Carlo Simulation
