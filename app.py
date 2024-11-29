@@ -50,7 +50,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Monte Carlo Simulation"
 ])
 
-
 # -------------------------------------------------------
 # Tab 1: Overview
 # -------------------------------------------------------
@@ -76,7 +75,7 @@ with tab1:
         st.error("No data available for the selected stock ticker or date range.")
     elif 'Close' not in stock_data.columns:
         st.error("'Close' column is missing in the data. Cannot proceed with analysis.")
-    elif stock_data['Close'].isna().sum() >= len(stock_data):
+    elif len(stock_data['Close'].dropna()) == 0:
         st.error("The 'Close' column contains only null values. Cannot display meaningful results.")
     else:
         # Line chart of stock closing prices
