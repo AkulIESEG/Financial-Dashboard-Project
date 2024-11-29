@@ -50,7 +50,9 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Monte Carlo Simulation"
 ])
 
+# -------------------------------------------------------
 # Tab 1: Overview
+# -------------------------------------------------------
 with tab1:
     st.header("Overview")
     st.write("""
@@ -61,39 +63,35 @@ with tab1:
     # Fetch stock data using yfinance
     stock_data = yf.download(stock_ticker, start=start_date, end=end_date)
 
-    # Debugging: Display the DataFrame structure
-    st.write("Debug: Displaying stock_data DataFrame")
-    st.write(stock_data)
+    # Debugging information
+    st.write("### Debug: Displaying stock_data DataFrame")
+    st.write("**Columns in stock_data:**")
+    st.write(list(stock_data.columns))  # Show columns in the DataFrame
+    st.write("**Head of stock_data:**")
+    st.write(stock_data.head())  # Show the first few rows for debugging
 
-    # Enhanced error handling
+    # Handle edge cases
     if stock_data.empty:
-        st.error("No data available for the selected stock ticker. Try another ticker or adjust the date range.")
+        st.error("No data available for the selected stock ticker or date range.")
+    elif 'Close' not in stock_data.columns:
+        st.error("'Close' column is missing in the data. Cannot proceed with analysis.")
+    elif stock_data['Close'].isnull().all():
+        st.error("All values in the 'Close' column are null. Cannot display meaningful results.")
     else:
-        # Check if 'Close' column exists and contains valid data
-        if 'Close' not in stock_data.columns:
-            st.error("The selected stock data does not contain a 'Close' column. Please try another stock ticker.")
-        elif stock_data['Close'].isnull().sum() == len(stock_data):
-            st.error("The 'Close' column contains only missing values. Please adjust your stock ticker or date range.")
-        else:
-            # Debugging: Show columns and head of DataFrame
-            st.write("Columns in stock_data:", stock_data.columns.tolist())
-            st.write("Head of stock_data:", stock_data.head())
+        # Line chart of stock closing prices
+        st.subheader("Stock Closing Prices Over Time")
+        fig = px.line(
+            stock_data,
+            x=stock_data.index,
+            y='Close',
+            title="Closing Prices Over Time",
+            template="plotly_white"
+        )
+        st.plotly_chart(fig)
 
-            # Line chart of stock closing prices
-            st.subheader("Stock Closing Prices Over Time")
-            fig = px.line(
-                stock_data, 
-                x=stock_data.index, 
-                y='Close', 
-                title="Closing Prices", 
-                template="plotly_white"
-            )
-            st.plotly_chart(fig)
-
-            # Display summary statistics
-            st.subheader("Summary Statistics")
-            st.write(stock_data.describe())
-
+        # Display summary statistics
+        st.subheader("Summary Statistics")
+        st.write(stock_data.describe())
 
 # -------------------------------------------------------
 # Tab 2: Metrics
