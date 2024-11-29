@@ -150,10 +150,9 @@ with tab2:
         )
         st.plotly_chart(fig)
 
-# -------------------------------------------------------
-# Tab 3: Comparison
-# -------------------------------------------------------
 
+
+# Tab 3: Comparison
 with tab3:
     st.header("Comparative Analysis")
     st.write("""
@@ -171,18 +170,18 @@ with tab3:
     if data1.empty or data2.empty:
         st.error("One or both stock tickers returned no data. Try again with valid tickers.")
     else:
-        # Align indices
+        # Align indices and reset them to avoid MultiIndex issues
         data1 = data1[['Close']].rename(columns={'Close': stock_ticker})
         data2 = data2[['Close']].rename(columns={'Close': stock2})
-        comparison_data = pd.concat([data1, data2], axis=1).dropna()
+        comparison_data = pd.concat([data1, data2], axis=1).dropna().reset_index()
 
         # Visualization: Closing Prices
         st.subheader("Closing Prices Comparison")
         try:
             fig = px.line(
-                comparison_data.reset_index(),
-                x='Date',
-                y=comparison_data.columns,
+                comparison_data,
+                x='Date',  # Ensure the 'Date' column is used for the x-axis
+                y=[stock_ticker, stock2],  # Explicitly list the columns to plot
                 title="Closing Prices Comparison",
                 template="plotly_white"
             )
@@ -192,13 +191,18 @@ with tab3:
 
         # Visualization: Cumulative Returns
         st.subheader("Cumulative Returns Comparison")
-        comparison_data[stock_ticker] = (comparison_data[stock_ticker].pct_change() + 1).cumprod()
-        comparison_data[stock2] = (comparison_data[stock2].pct_change() + 1).cumprod()
+        # Calculate cumulative returns for both stocks
+        comparison_data[f"{stock_ticker}_Cumulative"] = (
+            (comparison_data[stock_ticker].pct_change() + 1).cumprod()
+        )
+        comparison_data[f"{stock2}_Cumulative"] = (
+            (comparison_data[stock2].pct_change() + 1).cumprod()
+        )
         try:
             fig = px.line(
-                comparison_data.reset_index(),
-                x='Date',
-                y=comparison_data.columns,
+                comparison_data,
+                x='Date',  # Ensure the 'Date' column is used for the x-axis
+                y=[f"{stock_ticker}_Cumulative", f"{stock2}_Cumulative"],
                 title="Cumulative Returns Comparison",
                 template="plotly_white"
             )
